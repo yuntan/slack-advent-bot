@@ -34,7 +34,7 @@ def get_qiita_entries(url: str) -> List[Optional[str]]:
     entry_urls = [
         elem[2][0].get('href')
         if len(elem) >= 3 and
-        elem[2].get('class') is 'adventCalendarItem_entry'
+        elem[2].get('class') == 'adventCalendarItem_entry'
         else None
         for elem in elems]
     return entry_urls
