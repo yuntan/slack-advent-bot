@@ -5,6 +5,7 @@ import sys
 from cgi import FieldStorage
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import List, Optional
+from threading import Thread
 
 import lxml.html
 import requests
@@ -182,7 +183,10 @@ def main():
     print('schedule task')
     sc = scheduler()
     scheduled_task(sc)
-    sc.run(blocking=False)
+    # sc.run(blocking=False) # not working
+    t = Thread(target=sc.run)
+    t.daemon = True
+    t.start()
 
     print('start server')
     server = HTTPServer((HOST, PORT), SlackMsgHandler)
