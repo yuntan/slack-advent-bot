@@ -10,11 +10,13 @@ from typing import List, Optional
 import lxml.html
 import requests
 
-from config import (BOT_NAME, HOST, OUTGOING_WEBHOOK_TOKEN, PORT,
-                    POST_MESSAGE_URL, STORAGE)
+from config import (BOT_NAME, CHANNEL_ID, HOST, OUTGOING_WEBHOOK_TOKEN, PORT,
+                    SLACK_TEST_TOKEN, STORAGE, FETCH_INTERVAL)
 
 RE_QIITA_URL = re.compile(r'http://qiita.com/advent-calendar/\d{4}/[^>]+')
 RE_ADVENTAR_URL = re.compile(r'http://www.adventar.org/calendars/\d+')
+POST_MESSAGE_URL = 'https://oucc.slack.com/api/chat.postMessage' + \
+    '?token=%s&channel=%s&text=%s'
 
 
 def get_qiita_entries(url: str) -> List[Optional[str]]:
@@ -71,10 +73,15 @@ def scheduled_task():
 
 
 def post_slack(text: str):
-    url = POST_MESSAGE_URL % text
-    # TODO error handling
-    requests.get(url)
-    print('post_slack')
+    print('posting message to slack')
+
+    # TODO username and icon
+    url = POST_MESSAGE_URL % (SLACK_TEST_TOKEN, CHANNEL_ID, text)
+    resp = requests.get(url)
+    if resp.status_code == 200:
+        print('posting message done')
+    else:
+        print('error posting message %d %s' % (resp.status_code, resp.content))
 
 
 def register_url(url: str):
