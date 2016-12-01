@@ -99,26 +99,19 @@ def post_slack(text: str):
 
 
 def register_url(url: str):
+    # TODO get calender title
     if RE_QIITA_URL.findall(url):
         entry_urls = get_qiita_entries(url)
     else:
         entry_urls = get_adventar_entries(url)
 
-    with open(STORAGE, mode='r+t', encoding='utf-8') as fp:
+    with open(STORAGE, mode='rt', encoding='utf-8') as fp:
         storage = json.load(fp)
 
-        storage.calendars.append({'url': url, 'entry_urls': entry_urls})
+    storage['calendars'].append({'url': url, 'entry_urls': entry_urls})
 
+    with open(STORAGE, mode='wt', encoding='utf-8') as fp:
         fp.write(json.dumps(storage))
-
-    # if RE_ADVENTAR_URL.match(url):
-    #     if not storage['adventar_urls']:
-    #         storage['adventar_urls'] = []
-    #     storage['adventar_urls'].append(url)
-    # else:
-    #     if not storage['qiita_urls']:
-    #         storage['qiita_urls'] = []
-    #     storage['qiita_urls'].append(url)
 
 
 class SlackMsgHandler(BaseHTTPRequestHandler):
@@ -172,12 +165,15 @@ class SlackMsgHandler(BaseHTTPRequestHandler):
 # }
 def initialize_storage():
     try:
-        with open(STORAGE, mode='r+t', encoding='utf-8') as f:
+        with open(STORAGE, mode='rt', encoding='utf-8') as f:
             json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
+    except FileNotFoundError:
         with open(STORAGE, mode='wt', encoding='utf-8') as f:
             storage = {'last_updated': '', 'calendars': []}
             f.write(json.dumps(storage))
+    except json.JSONDecodeError:
+        print('ERROR invalid %s' % STORAGE)
+        sys.exit(1)
 
 
 def main():
