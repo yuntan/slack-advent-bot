@@ -1,9 +1,8 @@
 import json
 import re
-import sched
-import time
+from sched import scheduler
+import sys
 from cgi import FieldStorage
-from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import List, Optional
 
@@ -51,25 +50,40 @@ def get_adventar_entries(url: str) -> List[Optional[str]]:
     return entry_urls
 
 
-def scheduled_task():
+def scheduled_task(sc: scheduler):
+    print('start scheduled task')
+
     with open(STORAGE, mode='rt', encoding='utf-8') as fp:
         storage = json.load(fp)
 
     for calendar in storage['calendars']:
-        url = calendar.url
+        url = calendar['url']
         if RE_QIITA_URL.findall(url):
             new_entries = get_qiita_entries(url)
         else:
             new_entries = get_adventar_entries(url)
 
-        idx = [i
-               for i, old, new
-               in zip(range(25), calendar.entry_urls, new_entries)
-               if old is not new]
+        idx = [
+            i
+            for i, old, new
+            in zip(range(25), calendar['entry_urls'], new_entries)
+            if old != new]
+
+        print('found %d new entries' % len(idx))
 
         for i in idx:
             # TODO include calendar name to post
-            post_slack(('12/%2d ' % i + 1) + new_entries[i])
+            post_slack(('12/%2d ' % (i + 1)) + new_entries[i])
+
+        calendar['entry_urls'] = new_entries
+
+        with open(STORAGE, mode='wt', encoding='utf-8') as fp:
+            fp.write(json.dumps(storage))
+
+    print('end scheduled task')
+
+    # register self for periodic execution
+    sc.enter(FETCH_INTERVAL, 1, scheduled_task, (sc,))
 
 
 def post_slack(text: str):
@@ -168,16 +182,14 @@ def main():
     initialize_storage()
 
     print('schedule task')
-    scheduler = sched.scheduler(
-        lambda: datetime.now().minute,
-        lambda n: time.sleep(n * 60))
-    # schedule task one time par hour
-    scheduler.enter(0, 1, scheduled_task)
-    scheduler.run(blocking=False)
+    sc = scheduler()
+    scheduled_task(sc)
+    sc.run(blocking=False)
 
     print('start server')
     server = HTTPServer((HOST, PORT), SlackMsgHandler)
     server.serve_forever()
+
 
 if __name__ == '__main__':
     main()
