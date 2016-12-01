@@ -143,17 +143,19 @@ class SlackMsgHandler(BaseHTTPRequestHandler):
         print('new message by @%s `%s`' % (user_name, text))
 
         url = ''
-        match = RE_ADVENTAR_URL.match(text)
-        if match:
-            url = match.group(0)
-        match = RE_QIITA_URL.match(text)
-        if match:
-            url = match.group(0)
+        arr = RE_ADVENTAR_URL.findall(text)
+        if arr:
+            url = arr[0]
+        arr = RE_QIITA_URL.findall(text)
+        if arr:
+            url = arr[0]
 
         if url:
             print('url found')
             register_url(url)
-            self.wfile.write(json.dumps({'text': 'OK'}))
+            # self.wfile.write(json.dumps({'text': 'OK'}))
+            # json.dump({'text': 'OK'}, self.wfile)
+            self.wfile.write(b'{"text":"OK"}')
         else:
             print('no url found')
 
