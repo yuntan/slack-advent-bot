@@ -15,8 +15,7 @@ from config import (BOT_NAME, CHANNEL_ID, HOST, OUTGOING_WEBHOOK_TOKEN, PORT,
 
 RE_QIITA_URL = re.compile(r'http://qiita.com/advent-calendar/\d{4}/[^>]+')
 RE_ADVENTAR_URL = re.compile(r'http://www.adventar.org/calendars/\d+')
-POST_MESSAGE_URL = 'https://oucc.slack.com/api/chat.postMessage' + \
-    '?token=%s&channel=%s&text=%s'
+POST_MESSAGE_URL = 'https://oucc.slack.com/api/chat.postMessage'
 
 
 def get_qiita_entries(url: str) -> List[Optional[str]]:
@@ -90,13 +89,22 @@ def scheduled_task(sc: scheduler):
 def post_slack(text: str):
     print('posting message to slack')
 
-    # TODO username and icon
-    url = POST_MESSAGE_URL % (SLACK_TEST_TOKEN, CHANNEL_ID, text)
-    resp = requests.get(url)
-    if resp.status_code == 200:
+    resp = requests.get(POST_MESSAGE_URL, params={
+        'token': SLACK_TEST_TOKEN,
+        'channel': CHANNEL_ID,
+        'text': text,  # url encoded by requests
+        'unfurl_links': 'true',
+        'username': BOT_NAME,
+        'icon_emoji': ':gift:',
+        })
+    if resp.status_code == requests.codes.ok and resp.json()['ok']:
         print('posting message done')
     else:
-        print('error posting message %d %s' % (resp.status_code, resp.content))
+        try:
+            message = resp.json()['error']
+            print('error posting message %d %s' % (resp.status_code, message))
+        except ValueError:
+            print('error posting message %d' % resp.status_code)
 
 
 def register_url(url: str):
