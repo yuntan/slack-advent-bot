@@ -18,6 +18,12 @@ RE_ADVENTAR_URL = re.compile(r'http://www.adventar.org/calendars/\d+')
 POST_MESSAGE_URL = 'https://oucc.slack.com/api/chat.postMessage'
 
 
+def get_title(url: str) -> str:
+    html = requests.get(url).text
+    root = lxml.html.fromstring(html)
+    return root.cssselect('title')[0].text
+
+
 def get_qiita_entries(url: str) -> List[Optional[str]]:
     html = requests.get(url).text
     root = lxml.html.fromstring(html)
@@ -72,8 +78,8 @@ def scheduled_task(sc: scheduler):
         print('found %d new entries' % len(idx))
 
         for i in idx:
-            # TODO include calendar name to post
-            post_slack(('12/%2d ' % (i + 1)) + new_entries[i])
+            text = '%s %d日目 %s' % (calendar['title'], i + 1, new_entries[i])
+            post_slack(text)
 
         calendar['entry_urls'] = new_entries
 
@@ -108,7 +114,7 @@ def post_slack(text: str):
 
 
 def register_url(url: str):
-    # TODO get calender title
+    title = get_title(url)
     if RE_QIITA_URL.findall(url):
         entry_urls = get_qiita_entries(url)
     else:
@@ -117,7 +123,11 @@ def register_url(url: str):
     with open(STORAGE, mode='rt', encoding='utf-8') as fp:
         storage = json.load(fp)
 
-    storage['calendars'].append({'url': url, 'entry_urls': entry_urls})
+    storage['calendars'].append({
+        'url': url,
+        'title': title,
+        'entry_urls': entry_urls,
+    })
 
     with open(STORAGE, mode='wt', encoding='utf-8') as fp:
         fp.write(json.dumps(storage))
@@ -168,7 +178,11 @@ class SlackMsgHandler(BaseHTTPRequestHandler):
 # {
 #   'last_updated': ...,
 #   'calendars': [
-#     { 'url': 'http://...', 'entry_urls': ['http://...', ...], },
+#     {
+#       'url': 'http://...',
+#       'title': '...',
+#       'entry_urls': ['http://...', ...],
+#     },
 #     ...
 #   ],
 # }

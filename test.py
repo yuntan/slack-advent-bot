@@ -1,7 +1,7 @@
 from unittest import TestCase, main
 
 from main import (RE_ADVENTAR_URL, RE_QIITA_URL, get_adventar_entries,
-                  get_qiita_entries)
+                  get_qiita_entries, get_title)
 
 
 class Test(TestCase):
@@ -19,6 +19,13 @@ class Test(TestCase):
         ('<http://www.adventar.org/calendars/730>',
          'http://www.adventar.org/calendars/730'),
         ('<http://qiita.com/advent-calendar/2015/python>', None),
+    ]
+
+    __get_title_test_cases = [
+        ('http://qiita.com/advent-calendar/2015/python',
+         'Python Advent Calendar 2015 - Qiita'),
+        ('http://www.adventar.org/calendars/730',
+         'OUCC Advent Calendar 2015 - Adventar'),
     ]
 
     # とりあえず1--5日だけテスト
@@ -56,6 +63,11 @@ class Test(TestCase):
             else:
                 self.assertFalse(ans)
 
+    def test_get_title(self):
+        for val, ans in self.__get_title_test_cases:
+            result = get_title(val)
+            self.assertEqual(result, ans)
+
     def test_get_qiita_entries(self):
         val, ans = Test.__get_qiita_entries_test_case
         result = get_qiita_entries(val)
@@ -69,6 +81,7 @@ class Test(TestCase):
         self.assertEqual(len(result), 25)
         for r, a in zip(result, ans):
             self.assertEqual(r, a)
+
 
 if __name__ == '__main__':
     main()
