@@ -20,10 +20,11 @@ RE_ADVENTAR_URL = re.compile(r'http://www.adventar.org/calendars/\d+')
 POST_MESSAGE_URL = 'https://oucc.slack.com/api/chat.postMessage'
 
 
-def get_title(url: str) -> str:
+def get_qiita_title(url: str) -> str:
     html = requests.get(url).text
     root = lxml.html.fromstring(html)
-    return root.cssselect('title')[0].text
+    return root.cssselect('#main .adventCalendarJumbotron h1')[0]\
+        .text_content()
 
 
 def get_qiita_entries(url: str) -> List[Optional[str]]:
@@ -47,6 +48,12 @@ def get_qiita_entries(url: str) -> List[Optional[str]]:
         else None
         for elem in elems]
     return entry_urls
+
+
+def get_adventar_title(url: str) -> str:
+    html = requests.get(url).text
+    root = lxml.html.fromstring(html)
+    return root.cssselect('.mod-calendarHeader h2')[0].text
 
 
 def get_adventar_entries(url: str) -> List[Optional[str]]:
@@ -118,10 +125,11 @@ def post_slack(text: str):
 
 
 def register_url(url: str):
-    title = get_title(url)
     if RE_QIITA_URL.findall(url):
+        title = get_qiita_title(url)
         entry_urls = get_qiita_entries(url)
     else:
+        title = get_adventar_title(url)
         entry_urls = get_adventar_entries(url)
 
     with open(STORAGE, mode='rt', encoding='utf-8') as fp:

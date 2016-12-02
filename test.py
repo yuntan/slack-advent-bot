@@ -1,7 +1,7 @@
 from unittest import TestCase, main
 
 from main import (RE_ADVENTAR_URL, RE_QIITA_URL, get_adventar_entries,
-                  get_qiita_entries, get_title)
+                  get_adventar_title, get_qiita_entries, get_qiita_title)
 
 
 class Test(TestCase):
@@ -21,12 +21,10 @@ class Test(TestCase):
         ('<http://qiita.com/advent-calendar/2015/python>', None),
     ]
 
-    __get_title_test_cases = [
-        ('http://qiita.com/advent-calendar/2015/python',
-         'Python Advent Calendar 2015 - Qiita'),
-        ('http://www.adventar.org/calendars/730',
-         'OUCC Advent Calendar 2015 - Adventar'),
-    ]
+    __get_qiita_title_test_case = (
+        'http://qiita.com/advent-calendar/2015/python',
+        'Python Advent Calendar 2015'
+    )
 
     # とりあえず1--5日だけテスト
     __get_qiita_entries_test_case = (
@@ -37,6 +35,11 @@ class Test(TestCase):
             'http://qiita.com/icoxfog417/items/913bb815d8d419148c33',
             None,
         ])
+
+    __get_adventar_title_test_case = (
+        'http://www.adventar.org/calendars/730',
+        'OUCC Advent Calendar 2015'
+    )
 
     __get_adventar_entries_test_case = (
         'http://www.adventar.org/calendars/730', [
@@ -63,10 +66,10 @@ class Test(TestCase):
             else:
                 self.assertFalse(ans)
 
-    def test_get_title(self):
-        for val, ans in self.__get_title_test_cases:
-            result = get_title(val)
-            self.assertEqual(result, ans)
+    def test_get_qiita_title(self):
+        val, ans = Test.__get_qiita_title_test_case
+        result = get_qiita_title(val)
+        self.assertEqual(result, ans)
 
     def test_get_qiita_entries(self):
         val, ans = Test.__get_qiita_entries_test_case
@@ -74,6 +77,11 @@ class Test(TestCase):
         self.assertEqual(len(result), 25)
         for r, a in zip(result, ans):
             self.assertEqual(r, a)
+
+    def test_get_adventar_title(self):
+        val, ans = Test.__get_adventar_title_test_case
+        result = get_adventar_title(val)
+        self.assertEqual(result, ans)
 
     def test_get_adventar_entries(self):
         val, ans = Test.__get_adventar_entries_test_case
