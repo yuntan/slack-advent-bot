@@ -1,18 +1,20 @@
 import json
 import re
-from sched import scheduler
 import sys
 from cgi import FieldStorage
+from datetime import datetime as dt
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from typing import List, Optional
+from sched import scheduler
 from threading import Thread
+from typing import List, Optional
 
 import lxml.html
 import requests
 
-from config import (BOT_NAME, CHANNEL_ID, HOST, OUTGOING_WEBHOOK_TOKEN, PORT,
-                    SLACK_TEST_TOKEN, STORAGE, FETCH_INTERVAL)
+from config import (BOT_NAME, CHANNEL_ID, FETCH_INTERVAL, HOST,
+                    OUTGOING_WEBHOOK_TOKEN, PORT, SLACK_TEST_TOKEN, STORAGE)
 
+TIME_FORMAT = '%Y/%m/%d %H:%M:%S'
 RE_QIITA_URL = re.compile(r'http://qiita.com/advent-calendar/\d{4}/[^>]+')
 RE_ADVENTAR_URL = re.compile(r'http://www.adventar.org/calendars/\d+')
 POST_MESSAGE_URL = 'https://oucc.slack.com/api/chat.postMessage'
@@ -83,8 +85,10 @@ def scheduled_task(sc: scheduler):
 
         calendar['entry_urls'] = new_entries
 
-        with open(STORAGE, mode='wt', encoding='utf-8') as fp:
-            fp.write(json.dumps(storage))
+    storage['last_updated'] = dt.now().strftime(TIME_FORMAT)
+
+    with open(STORAGE, mode='wt', encoding='utf-8') as fp:
+        json.dump(storage, fp)
 
     print('end scheduled task')
 
@@ -102,7 +106,7 @@ def post_slack(text: str):
         'unfurl_links': 'true',
         'username': BOT_NAME,
         'icon_emoji': ':gift:',
-        })
+    })
     if resp.status_code == requests.codes.ok and resp.json()['ok']:
         print('posting message done')
     else:
@@ -129,8 +133,10 @@ def register_url(url: str):
         'entry_urls': entry_urls,
     })
 
+    storage['last_updated'] = dt.now().strftime(TIME_FORMAT)
+
     with open(STORAGE, mode='wt', encoding='utf-8') as fp:
-        fp.write(json.dumps(storage))
+        json.dump(storage, fp)
 
 
 class SlackMsgHandler(BaseHTTPRequestHandler):
@@ -188,12 +194,15 @@ class SlackMsgHandler(BaseHTTPRequestHandler):
 # }
 def initialize_storage():
     try:
-        with open(STORAGE, mode='rt', encoding='utf-8') as f:
-            json.load(f)
+        with open(STORAGE, mode='rt', encoding='utf-8') as fp:
+            json.load(fp)
     except FileNotFoundError:
-        with open(STORAGE, mode='wt', encoding='utf-8') as f:
-            storage = {'last_updated': '', 'calendars': []}
-            f.write(json.dumps(storage))
+        initial_contents = {
+            'last_updated': dt.now().strftime(TIME_FORMAT),
+            'calendars': [],
+        }
+        with open(STORAGE, mode='wt', encoding='utf-8') as fp:
+            json.dump(initial_contents, fp)
     except json.JSONDecodeError:
         print('ERROR invalid %s' % STORAGE)
         sys.exit(1)
