@@ -162,7 +162,7 @@ class SlackMsgHandler(BaseHTTPRequestHandler):
 
         # filter user
         user_name = form['user_name'].value
-        if user_name == BOT_NAME:
+        if user_name == 'slackbot':
             return
         text = form['text'].value
 
