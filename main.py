@@ -73,10 +73,15 @@ def scheduled_task(sc: scheduler):
 
     for calendar in storage['calendars']:
         url = calendar['url']
-        if RE_QIITA_URL.findall(url):
-            new_entries = get_qiita_entries(url)
-        else:
-            new_entries = get_adventar_entries(url)
+
+        try:
+            if RE_QIITA_URL.findall(url):
+                new_entries = get_qiita_entries(url)
+            else:
+                new_entries = get_adventar_entries(url)
+        except requests.exceptions.ConnectionError:
+            print('ERROR ConnectionError on loading %s' % url)
+            continue
 
         idx = [
             i
